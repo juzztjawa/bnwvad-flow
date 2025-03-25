@@ -1,2 +1,5 @@
 Flow-dataset/
- __pycache__/
+__pycache__/
+wandb/
+logs/
+ckpts/
