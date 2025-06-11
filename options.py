@@ -4,14 +4,16 @@ import os
 def parse_args():
     descript = 'Pytorch Implementation of UR-DMU'
     parser = argparse.ArgumentParser(description = descript)
-    parser.add_argument('--len_feature', type = int, default = 1024)
+    parser.add_argument('--len_feature', type = int, default = 2048)
 
     parser.add_argument('--root_dir', type = str, default = 'xd/')
+    parser.add_argument('--root_dir_rgb', type = str, default = 'xd/')
+    parser.add_argument('--root_dir_flow', type = str, default = 'xd/')
     parser.add_argument('--log_path', type = str, default = 'logs/')
     
     parser.add_argument('--model_path', type = str, default = 'ckpts/')
-    parser.add_argument('--lr', type = str, default = '[0.0001]*700', help = 'learning rates for steps(list form)')
-    parser.add_argument('--batch_size', type = int, default = 4)
+    parser.add_argument('--lr', type = str, default = '[0.0001]*1000', help = 'learning rates for steps(list form)')
+    parser.add_argument('--batch_size', type = int, default = 32)
     
     parser.add_argument('--num_workers', type = int, default = 4)
     parser.add_argument('--num_segments', type = int, default = 200)
@@ -24,8 +26,8 @@ def parse_args():
     
     parser.add_argument('--version', type=str, default='train')
     
-    parser.add_argument('--ratio_sample', type=float, default=0.6)
-    parser.add_argument('--ratio_batch', type=float, default=0.6)
+    parser.add_argument('--ratio_sample', type=float, default=0.2)
+    parser.add_argument('--ratio_batch', type=float, default=0.4)
     
     parser.add_argument('--ratios', type=int, nargs='+', default = [16, 32])
     parser.add_argument('--kernel_sizes', type=int, nargs='+', default = [1, 1, 1])

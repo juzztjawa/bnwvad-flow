@@ -65,8 +65,8 @@ class UCF_crime(data.Dataset):  # Use `data.Dataset` instead of `data.DataLoader
         if self.mode == "Train":
             new_feat = np.zeros((self.num_segments, video_feature.shape[1])).astype(np.float32)
             r = np.linspace(0, len(video_feature), self.num_segments + 1, dtype=np.int32)
-            print(new_feat)
-            print(r)
+            # print(new_feat)
+            # print(r)
             for i in range(self.num_segments):
                 if r[i] != r[i + 1]:
                     new_feat[i, :] = np.mean(video_feature[r[i]:r[i + 1], :], axis=0)
@@ -80,56 +80,121 @@ class UCF_crime(data.Dataset):  # Use `data.Dataset` instead of `data.DataLoader
         else:
             return video_feature, label
 
+# class XDVideo(data.DataLoader):
+#     def __init__(self, root_dir, mode, num_segments, len_feature, seed=-1, is_normal=None):
+#         if seed >= 0:
+#             utils.set_seed(seed)
+#         self.data_path=root_dir
+#         self.mode=mode
+#         self.num_segments = num_segments
+#         self.len_feature = len_feature
+        
+#         self.feature_path = self.data_path
+#         split_path = os.path.join("list",'XD_{}.list'.format(self.mode))
+#         split_file = open(split_path, 'r',encoding="utf-8")
+#         self.vid_list = []
+#         for line in split_file:
+#             self.vid_list.append(line.split())
+#         split_file.close()
+#         if self.mode == "Train":
+#             if is_normal is True:
+#                 self.vid_list = self.vid_list[9525:]
+#             elif is_normal is False:
+#                 self.vid_list = self.vid_list[:9525]
+#             else:
+#                 assert (is_normal == None)
+#                 print("Please sure is_normal = [True/False]")
+#                 self.vid_list=[]
+        
+#     def __len__(self):
+#         return len(self.vid_list)
+
+#     def __getitem__(self, index):
+#         data,label = self.get_data(index)
+#         return data, label
+
+#     def get_data(self, index):
+#         vid_name = self.vid_list[index][0]
+#         label=0
+#         if "_label_A" not in vid_name:
+#             label=1 
+#         # print(self.feature_path,vid_name) 
+#         video_feature = np.load(os.path.join(self.feature_path, vid_name )).astype(np.float32)
+#         if self.mode == "Train":
+#             new_feature = np.zeros((self.num_segments, self.len_feature)).astype(np.float32)
+
+#             sample_index = np.linspace(0, video_feature.shape[0], self.num_segments+1, dtype=np.uint16)
+
+#             for i in range(len(sample_index)-1):
+#                 if sample_index[i] == sample_index[i+1]:
+#                     new_feature[i,:] = video_feature[sample_index[i],:]
+#                 else:
+#                     new_feature[i,:] = video_feature[sample_index[i]:sample_index[i+1],:].mean(0)
+                    
+#             video_feature = new_feature
+#         return video_feature, label    
+
+
+
 class XDVideo(data.DataLoader):
     def __init__(self, root_dir, mode, num_segments, len_feature, seed=-1, is_normal=None):
         if seed >= 0:
             utils.set_seed(seed)
-        self.data_path=root_dir
-        self.mode=mode
+        self.data_path = root_dir
+        self.mode = mode
         self.num_segments = num_segments
         self.len_feature = len_feature
         
-        self.feature_path = self.data_path
-        split_path = os.path.join("list",'XD_{}.list'.format(self.mode))
-        split_file = open(split_path, 'r',encoding="utf-8")
-        self.vid_list = []
-        for line in split_file:
-            self.vid_list.append(line.split())
-        split_file.close()
+        self.rgb_feature_path = os.path.join(root_dir, "train" if mode == "Train" else "test")
+        self.flow_feature_path = os.path.join(root_dir, "Flow" if mode == "Train" else "FlowTest")
+        
+        split_path = os.path.join("list", 'XD_{}.list'.format(self.mode))
+        with open(split_path, 'r', encoding="utf-8") as split_file:
+            self.vid_list = [line.strip().split()[0] for line in split_file]
+        
         if self.mode == "Train":
             if is_normal is True:
                 self.vid_list = self.vid_list[9525:]
             elif is_normal is False:
                 self.vid_list = self.vid_list[:9525]
             else:
-                assert (is_normal == None)
-                print("Please sure is_normal = [True/False]")
-                self.vid_list=[]
-        
+                assert is_normal is None, "Please sure is_normal = [True/False]"
+                self.vid_list = []
+
     def __len__(self):
         return len(self.vid_list)
 
     def __getitem__(self, index):
-        data,label = self.get_data(index)
+        data, label = self.get_data(index)
         return data, label
 
     def get_data(self, index):
-        vid_name = self.vid_list[index][0]
-        label=0
+        full_path = self.vid_list[index]
+        vid_name = os.path.basename(full_path)  # Extract the filename (e.g., X1.npy)
+        label = 0
         if "_label_A" not in vid_name:
-            label=1 
-        # print(self.feature_path,vid_name) 
-        video_feature = np.load(os.path.join(self.feature_path, vid_name )).astype(np.float32)
+            label = 1 
+        
+        rgb_feature_path = os.path.join(self.rgb_feature_path, vid_name)
+        flow_feature_path = os.path.join(self.flow_feature_path, vid_name)
+        
+        rgb_video_feature = np.load(rgb_feature_path).astype(np.float32)
+        flow_video_feature = np.load(flow_feature_path).astype(np.float32)
+        
+        # Concatenate RGB and flow features along the feature dimension
+        video_feature = np.concatenate((rgb_video_feature, flow_video_feature), axis=1)
+        # print(video_feature.shape)
         if self.mode == "Train":
-            new_feature = np.zeros((self.num_segments, self.len_feature)).astype(np.float32)
+            new_feature = np.zeros((self.num_segments, video_feature.shape[1])).astype(np.float32)
 
-            sample_index = np.linspace(0, video_feature.shape[0], self.num_segments+1, dtype=np.uint16)
+            sample_index = np.linspace(0, video_feature.shape[0], self.num_segments + 1, dtype=np.uint16)
 
-            for i in range(len(sample_index)-1):
-                if sample_index[i] == sample_index[i+1]:
-                    new_feature[i,:] = video_feature[sample_index[i],:]
+            for i in range(len(sample_index) - 1):
+                if sample_index[i] == sample_index[i + 1]:
+                    new_feature[i, :] = video_feature[sample_index[i], :]
                 else:
-                    new_feature[i,:] = video_feature[sample_index[i]:sample_index[i+1],:].mean(0)
+                    new_feature[i, :] = video_feature[sample_index[i]:sample_index[i + 1], :].mean(0)
                     
             video_feature = new_feature
-        return video_feature, label    
+        
+        return video_feature, label

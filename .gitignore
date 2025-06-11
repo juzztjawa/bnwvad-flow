@@ -1,4 +1,12 @@
 Flow-dataset/
+Combine-dataset/
+rgb-dataset/
+flow_outputs/
+UCF_Crime_I3D_Features/
+frametest.ipynb
+input.mp4
+test_loader.pth
+test_loader_xd.pth
 __pycache__/
 wandb/
 logs/
